@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>كافيه جاد وأنا</title>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #f9f9f9;
+      text-align: center;
+      direction: rtl;
+    }
+    h1 {
+      color: #6b4f4f;
+    }
+    .menu {
+      margin-top: 20px;
+    }
+    .menu-item {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      margin: 10px auto;
+      padding: 10px;
+      width: 300px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .menu-item img {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 10px;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    form {
+      margin-top: 30px;
+    }
+    input, select, button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+    }
+    #searchInput, #filterCategory {
+      margin-top: 20px;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>قائمة كافيه جاد وأنا</h1>
+
+  <!-- مربع البحث -->
+  <input type="text" id="searchInput" placeholder="ابحث عن صنف...">
+
+  <!-- فلتر حسب القسم -->
+  <select id="filterCategory">
+    <option value="all">كل الأقسام</option>
+    <option value="مشروبات">مشروبات</option>
+    <option value="حلويات">حلويات</option>
+    <option value="ساندوتشات">ساندوتشات</option>
+  </select>
+
+  <div class="menu" id="menu"></div>
+
+  <form id="addForm">
+    <h3>إضافة صنف جديد</h3>
+    <input type="text" id="itemName" placeholder="اسم الصنف" required />
+    <input type="text" id="itemPrice" placeholder="السعر" required />
+    <input type="file" id="itemImageFile" accept="image/*" />
+    <select id="itemCategory" required>
+      <option value="">اختر القسم</option>
+      <option value="مشروبات">مشروبات</option>
+      <option value="حلويات">حلويات</option>
+      <option value="ساندوتشات">ساندوتشات</option>
+    </select>
+    <button type="submit">أضف الصنف</button>
+  </form>
+
+  <script>
+    const menu = document.getElementById('menu');
+    const addForm = document.getElementById('addForm');
+    const itemName = document.getElementById('itemName');
+    const itemPrice = document.getElementById('itemPrice');
+    const itemImageFile = document.getElementById('itemImageFile');
+    const itemCategory = document.getElementById('itemCategory');
+    const searchInput = document.getElementById('searchInput');
+    const filterCategory = document.getElementById('filterCategory');
+
+    let items = JSON.parse(localStorage.getItem('menuItems')) || [];
+
+    function displayItems() {
+      const searchTerm = searchInput.value.trim().toLowerCase();
+      const selectedCategory = filterCategory.value;
+
+      const filteredItems = items.filter(item => {
+        const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm);
+        return matchesCategory && matchesSearch;
+      });
+
+      menu.innerHTML = '';
+      filteredItems.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'menu-item';
+
+        let content = '';
+        if (item.image) {
+          content += `<img src="${item.image}" alt="صورة ${item.name}">`;
+        }
+        content += `<strong>${item.name}</strong><br>السعر: ${item.price} جنيه<br><small>القسم: ${item.category}</small>`;
+
+        itemDiv.innerHTML = content;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = 'حذف';
+        deleteBtn.onclick = () => {
+          items.splice(index, 1);
+          saveItems();
+          displayItems();
+        };
+
+        itemDiv.appendChild(deleteBtn);
+        menu.appendChild(itemDiv);
+      });
+    }
+
+    function saveItems() {
+      localStorage.setItem('menuItems', JSON.stringify(items));
+    }
+
+    addForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const name = itemName.value.trim();
+      const price = itemPrice.value.trim();
+      const category = itemCategory.value;
+      const file = itemImageFile.files[0];
+
+      if (!name || !price || !category) {
+        alert("من فضلك املأ كل الحقول المطلوبة");
+        return;
+      }
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const imageData = event.target.result;
+          const newItem = { name, price, image: imageData, category };
+          items.push(newItem);
+          saveItems();
+          displayItems();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const newItem = { name, price, image: '', category };
+        items.push(newItem);
+        saveItems();
+        displayItems();
+      }
+
+      itemName.value = '';
+      itemPrice.value = '';
+      itemImageFile.value = '';
+      itemCategory.value = '';
+    });
+
+    searchInput.addEventListener('input', displayItems);
+    filterCategory.addEventListener('change', displayItems);
+
+    displayItems();
+  </script>
+
+</body>
+</html>
